@@ -1,0 +1,52 @@
+# ==========================================================
+# .gitignore — static portfolio site
+# ==========================================================
+
+# ---------- Dependencies (not used, but keep the tree clean) ----------
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---------- OS junk ----------
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# ---------- Editors / IDEs ----------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.sublime-project
+.sublime-workspace
+
+# ---------- Logs & temp ----------
+*.log
+tmp/
+temp/
+*.tmp
+
+# ---------- Build tooling (none needed, future-proofing) ----------
+dist/
+build/
+.cache/
+.parcel-cache/
+.vite/
+
+# ---------- Env / secrets ----------
+.env
+.env.*
+
+# ==========================================================
+# Large media — GitHub blocks files over 100 MB, and the
+# background videos are ~500 MB. Uncomment to exclude the
+# whole folder, or add the videos via Git LFS instead:
+#   git lfs install
+#   git lfs track "*.mp4"
+# ==========================================================
+# assets/video/*.mp4
