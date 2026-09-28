@@ -1,10 +1,15 @@
 /* =====================================================================
    CONTROLLER — listens to the user, updates the Model, tells the View.
+   Navigation is also wired to the browser History API: opening a
+   subsection pushes a state, and popstate (back button / back gesture)
+   closes it and returns to the main view.
    ===================================================================== */
 
 const Controller = {
 
   transitioning: false,
+  pendingScreen: null,   // screen a wipe is heading toward (guards mid-wipe back presses)
+  historyBroken: false,  // pushState/replaceState unavailable (exotic file:// contexts)
 
   init() {
     View.init();
@@ -15,6 +20,7 @@ const Controller = {
     this.bindEmailChips();
     this.bindContactForm();
     this.bindTouchGestures();
+    this.bindHistory();
   },
 
   /* ---------- Email chip: copy address + open Gmail ---------- */
@@ -106,21 +112,112 @@ const Controller = {
     });
   },
 
-  /* ---------- Navigation ---------- */
+  /* ---------- Navigation ----------
+     Every transition funnels through here. Opening a subsection pushes a
+     History state; going home from one calls history.back(), which fires
+     popstate → route(). That way the browser/gesture back closes the
+     subsection instead of leaving the whole site. */
   goTo(screen) {
     if (this.transitioning || screen === Model.state.screen) return;
+
+    if (screen === "home" && this.inSubsection()) {
+      if (this.historyBroken) {   // no history to pop — close it directly
+        this._transition("home");
+        return;
+      }
+      // Reserve the transition slot right away: history.back() is async,
+      // and a second Esc before popstate would otherwise pop too far.
+      this.transitioning = true;
+      try {
+        history.back();           // popstate fires route("home") for us
+      } catch {
+        this.historyBroken = true;
+        this._transition("home"); // re-locks and runs the wipe
+      }
+      return;
+    }
+
+    if (screen !== "home") {
+      // Exotic contexts (some file:// setups) forbid pushState — fall back
+      // to plain navigation rather than breaking the site.
+      try {
+        history.pushState({ screen }, "", "#" + screen);
+      } catch {}
+    }
+    this._transition(screen);
+  },
+
+  // Swap the visible screen without a wipe or lock — used for deep links
+  _show(screen) {
+    this.pendingScreen = null;
+    Model.state.screen = screen;
+    View.showScreen(screen);
+    if (screen === "projects") this.loadProjects();
+    if (screen === "skills") this.loadSkills();
+  },
+
+  // Swap screens with the wipe transition and select sound
+  _transition(screen) {
     this.transitioning = true;
+    this.pendingScreen = screen;
     this.play();
 
     View.wipe(
-      () => {                       // mid-wipe: swap screens while covered
-        Model.state.screen = screen;
-        View.showScreen(screen);
-        if (screen === "projects") this.loadProjects();
-        if (screen === "skills") this.loadSkills();   // bars animate while still covered
-      },
+      () => this._show(screen),     // mid-wipe: swap screens while covered
       () => { this.transitioning = false; }
     );
+  },
+
+  /* ---------- Browser history ----------
+     The entry the site loads on is always stamped {screen:"home"}, so a
+     "home" entry always sits behind the subsection entries. A deep link
+     like /#contact gets its own entry pushed on top of it — the first
+     back gesture then returns to the menu instead of exiting the site. */
+  bindHistory() {
+    try {
+      history.replaceState(
+        { screen: "home" }, "", location.pathname + location.search
+      );
+    } catch {
+      this.historyBroken = true;   // navigation still works, just untracked
+    }
+
+    const hash = location.hash.slice(1);
+    if (!this.historyBroken && hash && hash !== "home" && this.isScreen(hash)) {
+      try {
+        history.pushState({ screen: hash }, "", "#" + hash);
+        this._show(hash);
+      } catch {}
+    }
+
+    addEventListener("popstate", e => this.route(e.state));
+  },
+
+  // Show the screen a history entry describes (back and forward gestures)
+  route(state) {
+    // Our own entries carry {screen}; browser-made ones (e.g. a manually
+    // typed #hash) carry null state — fall back to the current URL hash.
+    let screen = state && this.isScreen(state.screen) ? state.screen : null;
+    if (!screen) {
+      const hash = location.hash.slice(1);
+      screen = this.isScreen(hash) ? hash : "home";
+    }
+
+    // Mid-wipe, Model.state.screen is still stale — the wipe's target is
+    // the authoritative "where we are / are heading". If popstate lands
+    // there, the transition is already going the right way: let it finish.
+    if (screen === (this.pendingScreen || Model.state.screen)) return;
+
+    this._transition(screen);
+  },
+
+  // True while a subsection entry is the current history entry
+  inSubsection() {
+    return Model.state.screen !== "home";
+  },
+
+  isScreen(name) {
+    return !!name && Object.prototype.hasOwnProperty.call(View.els.screens, name);
   },
 
   select(index) {

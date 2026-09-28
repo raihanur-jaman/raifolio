@@ -88,14 +88,25 @@ const View = {
     this.els.menuItems.forEach((m, j) => m.classList.toggle("sel", j === index));
   },
 
-  // Diagonal wipe; calls swap() mid-way while the screen is covered
+  // Diagonal wipe; calls swap() mid-way while the screen is covered.
+  // Cancels the timers of a previous in-flight wipe so a new transition
+  // (e.g. the back button pressed mid-animation) always lands cleanly.
   wipe(swap, done) {
     if (this.reducedMotion) { swap(); done(); return; }
     const w = this.els.wipe;
+    clearTimeout(this._swapT);
+    clearTimeout(this._doneT);
     w.classList.remove("go"); void w.offsetWidth;  // restart animation
     w.classList.add("go");
-    setTimeout(swap, 340);
-    setTimeout(done, 720);
+    this._swapT = setTimeout(swap, 340);
+    this._doneT = setTimeout(done, 720);
+  },
+
+  // Abort an in-flight wipe: stop its timers so the interrupted screen swap
+  // never lands; the running animation just completes over the old screen.
+  cancelWipe() {
+    clearTimeout(this._swapT);
+    clearTimeout(this._doneT);
   },
 
   /* ---------- Sound ---------- */

@@ -9,6 +9,7 @@ A bold, **Persona 5-inspired interactive portfolio** built with vanilla HTML, CS
 ## ✨ Features
 
 - 🕹️ **Game-menu navigation** — ↑/↓ to select, Enter to confirm, Esc to go back, with diagonal screen-wipe transitions
+- ↩️ **Browser history integration** — opening a section pushes a History state (`#projects`, `#skills`, …) and the back button or gesture closes it back to the menu instead of leaving the site
 - ✂️ **"Ransom-note" lettering** — every heading is assembled from pseudo-randomly rotated, boxed and tinted letters (deterministic per visit — same look every time)
 - 🖱️ **Custom animated cursor** — 30-frame sprite-strip cursor with a distinct link state, auto-disabled on touch devices
 - 🎵 **Background music + SFX** — menu sounds on every selection, looping site music, and a global mute toggle
@@ -28,7 +29,7 @@ A bold, **Persona 5-inspired interactive portfolio** built with vanilla HTML, CS
 | Styling | CSS3 — custom properties, `clip-path`, keyframe animations, grid/flexbox, media queries, `prefers-reduced-motion` |
 | Fonts | [Archivo Black](https://fonts.google.com/specimen/Archivo+Black) & [Barlow Condensed](https://fonts.google.com/specimen/Barlow+Condensed) via Google Fonts |
 | Logic | Vanilla JavaScript (ES2020) — **MVC pattern**: `model.js` (data) · `view.js` (rendering) · `controller.js` (events) |
-| APIs | GitHub REST API (repo feed, optional) · FormSubmit AJAX (contact form) · Clipboard API |
+| APIs | History API (back-button navigation) · GitHub REST API (repo feed, optional) · FormSubmit AJAX (contact form) · Clipboard API |
 | Media | MP4 background video (home/skills), MP3 audio, PNG sprite cursors |
 
 ---
@@ -127,6 +128,7 @@ Browsers block autoplay, so playback capability is unlocked on the visitor's fir
 | ↑ / ↓ | Select menu item |
 | Enter | Confirm |
 | Esc | Back to home |
+| Browser back / back gesture | Close the open section (returns to home) |
 | Click name | Return home |
 | 🔊 button | Mute / unmute audio |
 | **Touch:** tap menu item | Select + open section |
@@ -136,6 +138,9 @@ Browsers block autoplay, so playback capability is unlocked on the visitor's fir
 > grids, touch scrolling with momentum, tap feedback instead of hover, and
 > safe-area support for notched devices. Landscape phones get a compact HUD
 > and menu layout.
+>
+> 🔙 On phones, the system back gesture/button closes the open section and
+> returns to the menu (via the History API) instead of leaving the site.
 
 ---
 
