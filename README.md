@@ -107,6 +107,8 @@ githubUser: "your-username",
 ```
 Leave it as `""` to keep the feed hidden. Repository names shown in `featured` are excluded from the feed via `featuredRepoNames`.
 
+Every feed card shows a description: the repo's GitHub description first, otherwise a one-liner from `repoDescriptions` in `js/model.js` — so a repo missing a description still never renders blank.
+
 ### Add project thumbnails
 Drop PNGs into `assets/projects/` — featured cards use the `img` path set in `model.js`; auto-fetched repos match by exact repo name (e.g. `my-app.png` for a repo named `my-app`).
 

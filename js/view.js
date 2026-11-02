@@ -177,7 +177,7 @@ const View = {
         ${this.cardThumb(img)}
         <span class="lang">${r.language || "Repo"}</span>
         <h3>${this.splitTitle(pretty)}</h3>
-        <p>${r.description || "No description yet, but the code speaks for itself."}</p>
+        <p>${r.description || model.repoDescriptions[r.name] || "No description yet, but the code speaks for itself."}</p>
         <div class="meta">
           <span>★ ${r.stargazers_count || 0}</span>
           <span class="go">View on GitHub</span>

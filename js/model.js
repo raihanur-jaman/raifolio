@@ -8,7 +8,7 @@ const Model = {
   // Live GitHub feed: set this to your username once you create an account
   // (e.g. "your-username") — your repos will then load automatically
   // under "All repositories" on the Projects screen. Leave "" to hide it.
-  githubUser: "",
+  githubUser: "raihanur-jaman",
 
   // Where the contact form delivers (via formsubmit.co relay)
   contactEmail: "raihanuzzaman200@gmail.com",
@@ -65,6 +65,12 @@ const Model = {
   // Anything not listed is looked up at assets/projects/<RepoName>.png
   projectImages: {},
 
+  // Fallback descriptions for repos that have none set on GitHub
+  // (matched by exact repo name). A description set on GitHub always wins.
+  repoDescriptions: {
+    "raifolio": "Persona 5-inspired interactive portfolio — game-menu navigation, custom sprite cursor, ransom-note lettering. Pure vanilla HTML, CSS & JavaScript; zero dependencies.",
+  },
+
   langColors: {
     JavaScript: "#5c5af1", TypeScript: "#3178c6", Python: "#3572A5",
     PHP: "#4F5D95", CSS: "#663399", HTML: "#e34c26",
@@ -95,11 +101,19 @@ const Model = {
     if (!this.githubUser) return { repos: [], live: false };
     const skip = new Set(this.featuredRepoNames);
     try {
-      const res = await fetch(
-        `https://api.github.com/users/${this.githubUser}/repos?per_page=100&sort=updated`
-      );
-      if (!res.ok) throw new Error(res.status);
-      const repos = (await res.json()).filter(r => !r.fork && !skip.has(r.name));
+      // Page through the user's ENTIRE repo list (100 per page), so any
+      // repo added on GitHub in the future shows up here automatically.
+      // Short page = end of the list reached.
+      const repos = [];
+      for (let page = 1; page <= 10; page++) {
+        const res = await fetch(
+          `https://api.github.com/users/${this.githubUser}/repos?per_page=100&sort=updated&page=${page}`
+        );
+        if (!res.ok) throw new Error(res.status);
+        const raw = await res.json();
+        repos.push(...raw.filter(r => !r.fork && !skip.has(r.name)));
+        if (raw.length < 100) break;
+      }
       return { repos, live: true };
     } catch {
       return { repos: this.fallbackRepos.filter(r => !skip.has(r.name)), live: false };
