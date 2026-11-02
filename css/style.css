@@ -410,25 +410,32 @@ body[data-screen]:not([data-screen="home"]) #hero-art{
 }
 #cursor{
   position:fixed;left:0;top:0;width:48px;height:48px;z-index:100000;
-  pointer-events:none;display:none;
-  background-repeat:no-repeat;background-position:0 0;
-  background-image:url("../assets/cursors/normal.png");
+  pointer-events:none;display:none;overflow:hidden;
   margin:-3px 0 0 -4px; /* NORMAL hotspot */
+  will-change:transform; /* position is written here by JS on mousemove */
 }
 #cursor.link{
-  background-image:url("../assets/cursors/link.png");
   margin:-6px 0 0 -6px; /* LINK_SELECT hotspot */
 }
-/* The 30 sprite frames (1440px strip / 48px each) are stepped purely in
-   CSS — zero JS work per frame. 1.5s / 30 steps = the original .ani's
-   50ms frame cadence; both cursor states share the same strip geometry. */
-@keyframes cursorFrames{
-  from{background-position:0 0;}
-  to{background-position:-1440px 0;}
-}
-#cursor{
+/* Both sprite strips (1440px / 30 frames of 48px) live as their own
+   clipped layer inside the cursor. Frames step via translateX — a pure
+   GPU compositor transform, so sprite animation never touches the main
+   thread. Hovering flips layer opacity instead of swapping the animated
+   element's background image, which previously forced a re-decode +
+   repaint mid-animation on every hover crossing (the laggy link cursor).
+   1.5s / 30 steps = the original .ani's 50ms frame cadence. */
+#cursor::before,#cursor::after{
+  content:"";position:absolute;left:0;top:0;width:1440px;height:48px;
   animation:cursorFrames 1.5s steps(30) infinite;
-  will-change:transform;
+  will-change:transform,opacity;
+}
+#cursor::before{background:url("../assets/cursors/normal.png") no-repeat;}
+#cursor::after{background:url("../assets/cursors/link.png") no-repeat;opacity:0;}
+#cursor.link::before{opacity:0;}
+#cursor.link::after{opacity:1;}
+@keyframes cursorFrames{
+  from{transform:translateX(0);}
+  to{transform:translateX(-1440px);}
 }
 
 /* clickable name */
