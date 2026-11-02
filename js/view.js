@@ -236,32 +236,49 @@ const View = {
     if (!matchMedia("(pointer:fine)").matches) return;
     const stripes = document.getElementById("bg-stripes");
     const halftone = document.getElementById("bg-halftone");
-    const arts = [...document.querySelectorAll(".menu-art")];
-    let tx = 0, ty = 0, cx = 0, cy = 0;
+    let tx = 0, ty = 0, cx = 0, cy = 0, running = false;
+
+    // Only the layers / artwork of the screen currently showing are updated
+    const apply = () => {
+      stripes.style.transform = `translate(${cx * 22}px, ${cy * 14}px)`;
+      halftone.style.transform = `translate(${cx * -34}px, ${cy * -22}px)`;
+      const art = document.getElementById("art-" + document.body.dataset.screen);
+      if (art)
+        art.style.transform = `translate(${cx * 14}px, ${cy * 9}px) scale(1.04)`;
+    };
+
+    // Lerped follow that PARKS ITSELF: when the pointer stops, the values
+    // settle to the target, the final position is written once, and the
+    // loop goes to sleep — zero per-frame work while idle (before, the
+    // loop ran forever rewriting 3 backgrounds and every screen's art).
+    const step = () => {
+      cx += (tx - cx) * 0.06; cy += (ty - cy) * 0.06;
+      if (Math.abs(tx - cx) < 0.0008 && Math.abs(ty - cy) < 0.0008) {
+        cx = tx; cy = ty;
+        apply();
+        running = false;
+        return;
+      }
+      apply();
+      requestAnimationFrame(step);
+    };
+
     addEventListener("mousemove", e => {
       tx = e.clientX / innerWidth - 0.5;
       ty = e.clientY / innerHeight - 0.5;
+      if (!running) { running = true; requestAnimationFrame(step); }
     }, { passive: true });
-    const loop = () => {
-      cx += (tx - cx) * 0.06; cy += (ty - cy) * 0.06;
-      stripes.style.transform = `translate(${cx * 22}px, ${cy * 14}px)`;
-      halftone.style.transform = `translate(${cx * -34}px, ${cy * -22}px)`;
-      arts.forEach(a => {
-        if (a.isConnected)
-          a.style.transform = `translate(${cx * 14}px, ${cy * 9}px) scale(1.04)`;
-      });
-      requestAnimationFrame(loop);
-    };
-    loop();
   },
 
-  // 30-frame sprite-strip cursor extracted from the original .ani files
+  // 30-frame sprite-strip cursor extracted from the original .ani files.
+  // The frame-flipping itself runs in CSS (see @keyframes cursorFrames in
+  // style.css) — here we only place the cursor and switch its state.
   startCursor() {
     // touch devices never get the custom sprite cursor; they already show a system one
     if (!matchMedia("(pointer:fine)").matches || this.reducedMotion) return;
     const cur = this.els.cursor;
     document.body.classList.add("cursor-on");
-    let x = -100, y = -100, frame = 0, last = 0, visible = false;
+    let x = -100, y = -100, px = -100, py = -100, visible = false, scheduled = false;
 
     addEventListener("mousemove", e => {
       x = e.clientX; y = e.clientY;
@@ -270,20 +287,22 @@ const View = {
       const overLink = t.closest &&
         t.closest("a,button,.card,.menu-item,.back-hint,.contact-chip,#big-name");
       cur.classList.toggle("link", !!overLink);
+      // batched to one rAF per frame; skips the write entirely when the
+      // pointer hasn't moved since the last placement
+      if (!scheduled) {
+        scheduled = true;
+        requestAnimationFrame(() => {
+          scheduled = false;
+          if (px !== x || py !== y) {
+            px = x; py = y;
+            cur.style.transform = `translate(${x}px, ${y}px)`;
+          }
+        });
+      }
     }, { passive: true });
 
     document.documentElement.addEventListener("mouseleave", () => {
       cur.style.display = "none"; visible = false;
     });
-
-    const tick = ts => {
-      if (ts - last >= 50) {                       // 50ms = original .ani frame rate
-        frame = (frame + 1) % 30; last = ts;
-        cur.style.backgroundPosition = -frame * 48 + "px 0";
-      }
-      cur.style.transform = `translate(${x}px, ${y}px)`;
-      requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
   },
 };

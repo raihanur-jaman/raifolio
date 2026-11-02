@@ -33,20 +33,34 @@ input,textarea{user-select:text;-webkit-user-select:text;}
 /* ============ BACKGROUND LAYERS ============ */
 #bg{position:fixed;inset:-6vmax;z-index:1;pointer-events:none;}
 .bg-layer{position:absolute;inset:0;will-change:transform;}
-#bg-stripes{
+/* Pattern drifts on an oversized pseudo-element instead of animating
+   background-position — a transform animation runs on the GPU compositor,
+   so the stripes no longer trigger a full-screen repaint every frame.
+   556px = 4 exact pattern periods (126px / sin 115° ≈ 139px), so the loop
+   wraps seamlessly; 23.53s keeps the original drift speed (520px in 22s). */
+#bg-stripes::before{
+  content:"";position:absolute;inset:-560px;
   background:repeating-linear-gradient(115deg,
     var(--red) 0 46px, var(--red-deep) 46px 52px,
     var(--red) 52px 120px, #001dc4 120px 126px);
-  animation:stripeDrift 22s linear infinite;
+  animation:stripeDrift 23.53s linear infinite;
+  will-change:transform;
 }
-@keyframes stripeDrift{from{background-position:0 0;}to{background-position:520px 0;}}
+@keyframes stripeDrift{from{transform:translateX(0);}to{transform:translateX(556px);}}
+/* Same compositor trick as the stripes: the dots drift via transform on an
+   oversized pseudo-element. -140px/+140px is exactly 10 dot tiles, so the
+   30s loop wraps seamlessly at the original speed — no full-screen repaint. */
 #bg-halftone{
+  mix-blend-mode:multiply;
+}
+#bg-halftone::before{
+  content:"";position:absolute;inset:-140px -140px 0 0;
   background-image:radial-gradient(circle, rgba(0,0,0,.35) 1.6px, transparent 1.7px);
   background-size:14px 14px;
-  mix-blend-mode:multiply;
   animation:halftoneDrift 30s linear infinite;
+  will-change:transform;
 }
-@keyframes halftoneDrift{from{background-position:0 0;}to{background-position:-140px 140px;}}
+@keyframes halftoneDrift{from{transform:translate(0,0);}to{transform:translate(-140px,140px);}}
 #bg-vignette{
   background:radial-gradient(ellipse at 32% 40%, transparent 30%, rgba(0,0,0,.72) 100%);
 }
@@ -404,6 +418,17 @@ body[data-screen]:not([data-screen="home"]) #hero-art{
 #cursor.link{
   background-image:url("../assets/cursors/link.png");
   margin:-6px 0 0 -6px; /* LINK_SELECT hotspot */
+}
+/* The 30 sprite frames (1440px strip / 48px each) are stepped purely in
+   CSS — zero JS work per frame. 1.5s / 30 steps = the original .ani's
+   50ms frame cadence; both cursor states share the same strip geometry. */
+@keyframes cursorFrames{
+  from{background-position:0 0;}
+  to{background-position:-1440px 0;}
+}
+#cursor{
+  animation:cursorFrames 1.5s steps(30) infinite;
+  will-change:transform;
 }
 
 /* clickable name */

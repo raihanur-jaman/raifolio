@@ -150,7 +150,7 @@ Browsers block autoplay, so playback capability is unlocked on the visitor's fir
 
 - No frameworks, no build step — the entire site is static
 - All card thumbnails use `loading="lazy"`
-- Parallax and cursor loops run on `requestAnimationFrame` with smoothed (lerped) values
+- Parallax and cursor only do work while the pointer is actually moving — both loops park themselves as soon as values settle. Cursor sprite frames and the background drifts run as CSS animations on compositor layers, so nothing repaints the full screen per frame
 - Fonts load with `display=swap`; a system-font fallback stack keeps text visible during load
 - Contact-form requests abort after 12 s and fall back to `mailto:`
 
