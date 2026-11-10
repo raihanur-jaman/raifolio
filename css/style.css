@@ -19,17 +19,6 @@ body{
 input,textarea{user-select:text;-webkit-user-select:text;}
 .display{font-family:'Archivo Black','Arial Black',Impact,sans-serif;}
 
-/* ---------- HOME BACKGROUND VIDEO ---------- */
-#home-video{
-  position:fixed;
-  inset:0;
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  z-index:0;
-  pointer-events:none;
-}
-
 /* ============ BACKGROUND LAYERS ============ */
 #bg{position:fixed;inset:-6vmax;z-index:1;pointer-events:none;}
 .bg-layer{position:absolute;inset:0;will-change:transform;}
@@ -68,16 +57,11 @@ input,textarea{user-select:text;-webkit-user-select:text;}
 .bg-star.s2{animation-duration:90s;animation-direction:reverse;opacity:.1;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
-/* big black slash behind the menu, like a torn silhouette */
-#slash{
-  position:fixed;z-index:1;inset:0;pointer-events:none;
-  background:var(--black);
-  clip-path:polygon(58% 0, 100% 0, 100% 100%, 40% 100%, 52% 62%, 45% 60%, 60% 24%, 51% 22%);
-  transition:clip-path .8s cubic-bezier(.8,0,.15,1);
-}
-body[data-screen]:not([data-screen="home"]) #slash{
-  clip-path:polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 62%, 0 60%, 0 24%, 0 22%);
-}
+/* (The legacy #slash clip-path backdrop was removed. It painted a black
+   right-side diagonal on first load — the right-edge flash on refresh —
+   and because it stacked above the menu artwork it could only ever be
+   neutralized by has-art-home, a home.jpg load event. Removing it makes
+   every screen's backdrop static from the stylesheet.) */
 
 /* ============ SHELL / HUD ============ */
 #shell{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;}
@@ -123,8 +107,11 @@ body[data-screen]:not([data-screen="home"]) #slash{
   font-size:clamp(14px,1.6vw,20px);letter-spacing:.5em;text-transform:uppercase;
   margin-bottom:1.2vh;font-weight:700;text-shadow:2px 2px 0 var(--black);
 }
+/* min-height reserves the headline's real box while the ransom letters are
+   still empty (view.js builds them) — the tagline/menu no longer jump
+   upward and back down mid-load when the letters appear */
 #big-name{line-height:1.08;margin-bottom:2.5vh;padding-top:.1em;}
-#big-name .ransom{font-size:clamp(44px,8.5vw,124px);display:block;overflow:visible;}
+#big-name .ransom{font-size:clamp(44px,8.5vw,124px);display:block;overflow:visible;min-height:1em;}
 #tagline{
   max-width:520px;font-size:clamp(15px,1.5vw,20px);line-height:1.45;
   background:var(--black);padding:12px 18px;transform:rotate(-1deg);
@@ -332,20 +319,7 @@ body[data-screen]:not([data-screen="home"]) #slash{
 .contact-chip:hover{background:var(--white);color:var(--red);transform:skewX(-8deg) rotate(0) scale(1.06);}
 
 /* ============ IMAGE SLOTS ============ */
-/* 1. Hero art — big character/portrait on the right, over the black slash */
-#hero-art{
-  position:fixed;right:0;bottom:0;z-index:1;
-  height:min(92vh,900px);max-width:46vw;object-fit:contain;object-position:bottom right;
-  filter:drop-shadow(-14px 10px 0 rgba(0, 73, 230, 0.85)) drop-shadow(-4px 4px 12px rgba(0,0,0,.6));
-  pointer-events:none;
-  transition:transform .8s cubic-bezier(.8,0,.15,1), opacity .5s;
-}
-body[data-screen]:not([data-screen="home"]) #hero-art{
-  transform:translateX(60%) skewX(-6deg);opacity:0;
-}
-@media (max-width:900px){#hero-art{max-width:70vw;opacity:.5;}}
-
-/* 2. Project card thumbnails */
+/* 1. Project card thumbnails */
 .card .thumb{
   margin:-20px -22px 14px;height:150px;overflow:hidden;position:relative;
   clip-path:polygon(0 0, 100% 0, 100% 82%, 0 100%);
@@ -362,7 +336,7 @@ body[data-screen]:not([data-screen="home"]) #hero-art{
   background:linear-gradient(115deg, transparent 78%, var(--red) 78.5%);
 }
 
-/* 3. About photo — taped-up polaroid */
+/* 2. About photo — taped-up polaroid */
 .about-photo{
   float:right;width:min(240px,38%);margin:0 0 14px 22px;
   background:var(--white);padding:10px 10px 34px;
@@ -470,17 +444,21 @@ body[data-screen="skills"]   #art-skills,
 body[data-screen="about"]    #art-about,
 body[data-screen="contact"]  #art-contact{opacity:1;}
 
-/* the home artwork carries its own black diagonal — drop the CSS slash */
-body.has-art-home #slash{display:none;}
-/* soften the halftone overlay whenever a screen's art is showing */
-body.has-art-home[data-screen="home"] #bg-halftone,
+/* Menu artwork now sits at the top of the background stack — no layer
+   may retro-hide it based on image-load timing. */
+/* soften the halftone overlay whenever a screen's art is showing.
+   Home's treatment is static — its backdrop is always full-canvas, so
+   no image-load event may retint it mid-load. (Skills hides the
+   halftone entirely — see the later body[data-screen="skills"] rule;
+   that display:none wins, so the skills selector lives here no more.) */
+body[data-screen="home"] #bg-halftone,
 body.has-art-projects[data-screen="projects"] #bg-halftone,
-body.has-art-skills[data-screen="skills"] #bg-halftone,
 body.has-art-about[data-screen="about"] #bg-halftone,
 body.has-art-contact[data-screen="contact"] #bg-halftone{opacity:.5;}
 
-/* readability scrims — darken the side the content sits on */
-body.has-art-home[data-screen="home"] #bg-vignette,
+/* readability scrims — darken the side the content sits on.
+   (idem — the home member is static, not keyed off has-art-home) */
+body[data-screen="home"] #bg-vignette,
 body.has-art-skills[data-screen="skills"] #bg-vignette{
   background:
     linear-gradient(100deg, rgba(0,0,0,.42) 0%, rgba(0,0,0,.12) 36%, transparent 58%),
@@ -497,8 +475,8 @@ body.has-art-about[data-screen="about"] #bg-vignette{
     linear-gradient(260deg, rgba(0,0,0,.72) 0%, rgba(0,0,0,.3) 42%, transparent 64%),
     radial-gradient(ellipse at 68% 40%, transparent 25%, rgba(0,0,0,.6) 100%);
 }
-body.has-art-home #menu .ch:not(.box):not(.boxw),
-body.has-art-home #big-name .ch:not(.box):not(.boxw){
+body[data-screen="home"] #menu .ch:not(.box):not(.boxw),
+body[data-screen="home"] #big-name .ch:not(.box):not(.boxw){
   text-shadow:2px 2px 0 rgba(0,0,0,.6);
 }
 
@@ -636,9 +614,6 @@ body.has-art-home #big-name .ch:not(.box):not(.boxw){
   .cv-btn{font-size:15px;padding:13px 22px;margin-bottom:4vh;}
   .form-foot{gap:12px;}
 
-  /* --- Hero art: step aside, content wins on a phone --- */
-  #hero-art{max-width:82vw;opacity:.38;filter:drop-shadow(-8px 6px 0 rgba(0,73,230,.85));}
-
   /* --- Wipe transition: shallower skew so edges don't gap on narrow screens --- */
   #wipe{inset:-16%;}
 }
@@ -666,7 +641,6 @@ body.has-art-home #big-name .ch:not(.box):not(.boxw){
   .skill-row .name{width:150px;font-size:14px;}
   .paper{font-size:14.5px;padding:14px 16px;}
   .about-photo{width:min(140px,30%);}
-  #hero-art{max-width:52vw;opacity:.32;}
 }
 
 /* --- COARSE POINTERS (touch): replace hover with tap feedback --- */
@@ -709,31 +683,10 @@ body.has-art-home #big-name .ch:not(.box):not(.boxw){
   *,*::before,*::after{animation-duration:.001s !important;transition-duration:.001s !important;}
 }
 /* =========================================================
-   VIDEO ONLY ON HOME
+   HOME SCREEN
    ========================================================= */
 
-/* Put video above the normal background */
-#home-video {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: 1;
-  pointer-events: none;
-}
-
-/* Hide video on every screen except Home */
-body[data-screen]:not([data-screen="home"]) #home-video {
-  display: none !important;
-}
-
-/* Hide ONLY the old Home picture */
-body[data-screen="home"] #art-home {
-  display: none !important;
-}
-
-/* Keep portfolio text/menu above the video */
+/* Keep portfolio text/menu above the background layers */
 #shell {
   position: relative;
   z-index: 2;
@@ -743,18 +696,9 @@ body[data-screen="home"] #art-home {
 }
 
 /* =========================================================
-   SKILLS BACKGROUND VIDEO
+   SKILLS SCREEN
    ========================================================= */
 
-#art-skills {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: 0;
-  pointer-events: none;
-}
 /* Remove dotted pattern only on Skills screen */
 body[data-screen="skills"] #bg-halftone {
   display: none !important;
