@@ -41,6 +41,7 @@ input,textarea{user-select:text;-webkit-user-select:text;}
    30s loop wraps seamlessly at the original speed — no full-screen repaint. */
 #bg-halftone{
   mix-blend-mode:multiply;
+  transition:opacity .55s ease;   /* eases in step with the art reveal */
 }
 #bg-halftone::before{
   content:"";position:absolute;inset:-140px -140px 0 0;
@@ -439,20 +440,25 @@ input,textarea{user-select:text;-webkit-user-select:text;}
   opacity:0;will-change:transform;pointer-events:none;
   transition:opacity .55s ease;
 }
-body[data-screen="projects"] #art-projects,
-body[data-screen="skills"]   #art-skills,
-body[data-screen="about"]    #art-about,
-body[data-screen="contact"]  #art-contact{opacity:1;}
+/* The art itself is revealed only once its file has actually loaded
+   (has-art-*, set by the img's onload). Cached art is instantly ready,
+   so the reveal lands mid-wipe as before; on a cold connection the
+   stripes stay visible and the art crossfades in when ready, instead
+   of an undecoded blank popping in abruptly. */
+body.has-art-projects[data-screen="projects"] #art-projects,
+body.has-art-skills[data-screen="skills"]     #art-skills,
+body.has-art-about[data-screen="about"]       #art-about,
+body.has-art-contact[data-screen="contact"]   #art-contact{opacity:1;}
 
 /* Menu artwork now sits at the top of the background stack — no layer
    may retro-hide it based on image-load timing. */
-/* soften the halftone overlay whenever a screen's art is showing.
-   Home's treatment is static — its backdrop is always full-canvas, so
-   no image-load event may retint it mid-load. (Skills hides the
-   halftone entirely — see the later body[data-screen="skills"] rule;
-   that display:none wins, so the skills selector lives here no more.) */
+/* Soften the halftone overlay whenever a screen's art is showing.
+   Gated on has-art-* so a cold-cache visit keeps full texture until its
+   art is ready, then eases down together with the art's own .55s
+   reveal — no mid-load retint pops. */
 body[data-screen="home"] #bg-halftone,
 body.has-art-projects[data-screen="projects"] #bg-halftone,
+body.has-art-skills[data-screen="skills"] #bg-halftone,
 body.has-art-about[data-screen="about"] #bg-halftone,
 body.has-art-contact[data-screen="contact"] #bg-halftone{opacity:.5;}
 
@@ -695,14 +701,6 @@ body[data-screen="home"] #big-name .ch:not(.box):not(.boxw){
   letter-spacing: -0.08em;
 }
 
-/* =========================================================
-   SKILLS SCREEN
-   ========================================================= */
-
-/* Remove dotted pattern only on Skills screen */
-body[data-screen="skills"] #bg-halftone {
-  display: none !important;
-}
 /* =========================================================
    ABOUT PAGE - HIGHLIGHTED PERSONA 5 STYLE
    ========================================================= */
